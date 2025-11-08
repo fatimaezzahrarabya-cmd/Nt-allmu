@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نتعلمو - منصة تعليمية للأطفال</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="hero">
+        <h1>🌟 مرحباً بكم في منصة نتعلمو 🌟</h1>
+        
+        <div class="mission">
+            <p>
+                نحن هنا لمساعدة كل طفل مغربي على التعلم والنمو 🌱
+            </p>
+            <p>
+                تعلم الرياضيات واللغة العربية بطريقة ممتعة وسهلة
+            </p>
+            <p>
+                كل درس يحتوي على فيديو تعليمي واختبار ممتع 🎯
+            </p>
+            <p>
+                اجمع النجوم وتابع تقدمك! ⭐
+            </p>
+        </div>
+
+        <button class="start-btn" onclick="window.location.href='html/lessons.html'">
+            🚀 ابدأ التعلم الآن 🚀
+        </button>
+    </div>
+
+    <script>
+        // Add some sparkle effects
+        setInterval(() => {
+            const sparkle = document.createElement('div');
+            sparkle.innerHTML = '✨';
+            sparkle.style.position = 'fixed';
+            sparkle.style.left = Math.random() * window.innerWidth + 'px';
+            sparkle.style.top = '0';
+            sparkle.style.fontSize = '2rem';
+            sparkle.style.animation = 'confetti-fall 3s linear';
+            sparkle.style.pointerEvents = 'none';
+            document.body.appendChild(sparkle);
+            
+            setTimeout(() => sparkle.remove(), 3000);
+        }, 2000);
+    </script>
+</body>
+</html>

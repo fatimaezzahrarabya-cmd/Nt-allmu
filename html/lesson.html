@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>درس - تعلم معنا</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="window.location.href='lessons.html'">
+                ← رجوع للدروس
+            </button>
+            <div class="stars">
+                ⭐ <span id="totalStars">0</span>
+            </div>
+        </div>
+
+        <div class="lesson-container">
+            <div class="lesson-header">
+                <div class="lesson-emoji" id="lessonEmoji">📚</div>
+                <h2 id="lessonTitle">جاري التحميل...</h2>
+                <p id="lessonDescription"></p>
+            </div>
+
+            <div class="video-container">
+                <iframe 
+                    id="lessonVideo"
+                    src="" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+
+            <div class="quiz-section">
+                <h3>🎯 الآن حان وقت الاختبار!</h3>
+                <p style="text-align: center; color: #666; margin-bottom: 2rem;">
+                    أجب على جميع الأسئلة بشكل صحيح للانتقال إلى الدرس التالي
+                </p>
+                <div id="quizContainer">
+                    <!-- Quiz questions will be populated here -->
+                </div>
+                <button class="submit-quiz-btn" id="submitQuiz" disabled>
+                    ✓ تأكد من الإجابات
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal" id="successModal">
+        <div class="modal-content">
+            <div class="celebration">🎉</div>
+            <h2>أحسنت! 🌟</h2>
+            <p style="font-size: 1.5rem; margin: 1rem 0;">
+                لقد أكملت الدرس بنجاح!
+            </p>
+            <p style="font-size: 1.2rem; color: #4CAF50;">
+                حصلت على <strong id="earnedStars">0</strong> نجمة! ⭐
+            </p>
+            <button class="next-lesson-btn" onclick="goToNextLesson()">
+                → الدرس التالي
+            </button>
+            <button class="next-lesson-btn" style="background: #6c757d; margin-right: 1rem;" onclick="window.location.href='lessons.html'">
+                عودة للدروس
+            </button>
+        </div>
+    </div>
+
+    <script src="../data.js"></script>
+    <script>
+        let currentLesson = null;
+        let userAnswers = [];
+
+        // Get lesson ID from URL
+        function getLessonIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return parseInt(urlParams.get('id')) || 1;
+        }
+
+        // Load progress
+        function getProgress() {
+            const progress = localStorage.getItem('lessonsProgress');
+            return progress ? JSON.parse(progress) : { completed: [], totalStars: 0 };
+        }
+
+        function saveProgress(lessonId, starsEarned) {
+            const progress = getProgress();
+            
+            if (!progress.completed.includes(lessonId)) {
+                progress.completed.push(lessonId);
+                progress.totalStars += starsEarned;
+                localStorage.setItem('lessonsProgress', JSON.stringify(progress));
+            }
+        }
+
+        // Update stars display
+        function updateStarsDisplay() {
+            const progress = getProgress();
+            document.getElementById('totalStars').textContent = progress.totalStars;
+        }
+
+        // Load lesson content
+        function loadLesson() {
+            const lessonId = getLessonIdFromUrl();
+            currentLesson = getLessonById(lessonId);
+
+            if (!currentLesson) {
+                alert('الدرس غير موجود!');
+                window.location.href = 'lessons.html';
+                return;
+            }
+
+            // Update lesson info
+            document.getElementById('lessonEmoji').textContent = currentLesson.emoji;
+            document.getElementById('lessonTitle').textContent = currentLesson.title;
+            document.getElementById('lessonDescription').textContent = currentLesson.description;
+            document.getElementById('lessonVideo').src = currentLesson.videoUrl;
+
+            // Load quiz
+            loadQuiz();
+        }
+
+        // Load quiz questions
+        function loadQuiz() {
+            const quizContainer = document.getElementById('quizContainer');
+            userAnswers = new Array(currentLesson.quiz.length).fill(null);
+
+            currentLesson.quiz.forEach((question, qIndex) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'quiz-question';
+                questionDiv.id = `question-${qIndex}`;
+
+                const questionText = document.createElement('div');
+                questionText.className = 'question-text';
+                questionText.textContent = `${qIndex + 1}. ${question.question}`;
+                questionDiv.appendChild(questionText);
+
+                const choicesDiv = document.createElement('div');
+                choicesDiv.className = 'choices';
+
+                question.choices.forEach((choice, cIndex) => {
+                    const choiceBtn = document.createElement('button');
+                    choiceBtn.className = 'choice-btn';
+                    choiceBtn.textContent = choice;
+                    choiceBtn.onclick = () => selectAnswer(qIndex, cIndex, choiceBtn);
+                    choicesDiv.appendChild(choiceBtn);
+                });
+
+                questionDiv.appendChild(choicesDiv);
+                quizContainer.appendChild(questionDiv);
+            });
+        }
+
+        // Handle answer selection
+        function selectAnswer(questionIndex, choiceIndex, button) {
+            // Remove selected class from all choices in this question
+            const questionDiv = document.getElementById(`question-${questionIndex}`);
+            const allChoices = questionDiv.querySelectorAll('.choice-btn');
+            allChoices.forEach(btn => btn.classList.remove('selected'));
+
+            // Add selected class to clicked button
+            button.classList.add('selected');
+
+            // Store user answer
+            userAnswers[questionIndex] = choiceIndex;
+
+            // Enable submit button if all questions answered
+            checkAllAnswered();
+        }
+
+        // Check if all questions are answered
+        function checkAllAnswered() {
+            const allAnswered = userAnswers.every(answer => answer !== null);
+            document.getElementById('submitQuiz').disabled = !allAnswered;
+        }
+
+        // Submit quiz
+        document.getElementById('submitQuiz').onclick = function() {
+            let allCorrect = true;
+            let correctCount = 0;
+
+            currentLesson.quiz.forEach((question, index) => {
+                const questionDiv = document.getElementById(`question-${index}`);
+                const isCorrect = userAnswers[index] === question.correctAnswer;
+
+                if (isCorrect) {
+                    questionDiv.classList.add('correct');
+                    questionDiv.classList.remove('incorrect');
+                    correctCount++;
+                } else {
+                    questionDiv.classList.add('incorrect');
+                    questionDiv.classList.remove('correct');
+                    allCorrect = false;
+                }
+
+                // Disable all buttons
+                const choices = questionDiv.querySelectorAll('.choice-btn');
+                choices.forEach(btn => btn.disabled = true);
+            });
+
+            if (allCorrect) {
+                // Calculate stars (3 stars per lesson)
+                const starsEarned = 3;
+                
+                // Save progress
+                saveProgress(currentLesson.id, starsEarned);
+
+                // Create confetti effect
+                createConfetti();
+
+                // Show success modal
+                setTimeout(() => {
+                    document.getElementById('earnedStars').textContent = starsEarned;
+                    document.getElementById('successModal').classList.add('show');
+                    updateStarsDisplay();
+                }, 1000);
+            } else {
+                alert('❌ بعض الإجابات خاطئة! حاول مرة أخرى.');
+                
+                // Reset for retry
+                setTimeout(() => {
+                    currentLesson.quiz.forEach((question, index) => {
+                        const questionDiv = document.getElementById(`question-${index}`);
+                        questionDiv.classList.remove('correct', 'incorrect');
+                        const choices = questionDiv.querySelectorAll('.choice-btn');
+                        choices.forEach(btn => {
+                            btn.disabled = false;
+                            btn.classList.remove('selected');
+                        });
+                    });
+                    
+                    userAnswers = new Array(currentLesson.quiz.length).fill(null);
+                    document.getElementById('submitQuiz').disabled = true;
+                }, 2000);
+            }
+        };
+
+        // Create confetti effect
+        function createConfetti() {
+            const colors = ['🎉', '⭐', '🌟', '✨', '🎊'];
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.textContent = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.position = 'fixed';
+                    confetti.style.left = Math.random() * window.innerWidth + 'px';
+                    confetti.style.top = '-50px';
+                    confetti.style.fontSize = '2rem';
+                    confetti.style.animation = 'confetti-fall 3s linear';
+                    confetti.style.pointerEvents = 'none';
+                    confetti.style.zIndex = '9999';
+                    document.body.appendChild(confetti);
+
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 50);
+            }
+        }
+
+        // Go to next lesson
+        function goToNextLesson() {
+            const nextLessonId = currentLesson.id + 1;
+            const nextLesson = getLessonById(nextLessonId);
+
+            if (nextLesson) {
+                window.location.href = `lesson.html?id=${nextLessonId}`;
+            } else {
+                alert('🎉 مبروك! لقد أكملت جميع الدروس!');
+                window.location.href = 'lessons.html';
+            }
+        }
+
+        // Initialize
+        updateStarsDisplay();
+        loadLesson();
+    </script>
+</body>
+</html>

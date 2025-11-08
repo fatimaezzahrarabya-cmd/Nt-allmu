@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الدروس - نتعلمو </title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>📚 الدروس المتاحة</h1>
+                <p>اختر درساً لتبدأ التعلم</p>
+            </div>
+            <div class="progress-info">
+                <div class="stars">
+                    ⭐ <span id="totalStars">0</span>
+                </div>
+                <button class="back-btn" onclick="window.location.href='../index.html'">
+                    🏠 الرئيسية
+                </button>
+            </div>
+        </div>
+
+        <div class="lessons-grid" id="lessonsGrid">
+            <!-- Lessons will be populated here by JavaScript -->
+        </div>
+    </div>
+
+    <script src="../data.js"></script>
+    <script>
+        // Load progress from localStorage
+        function getProgress() {
+            const progress = localStorage.getItem('lessonsProgress');
+            return progress ? JSON.parse(progress) : { completed: [], totalStars: 0 };
+        }
+
+        function isLessonCompleted(lessonId) {
+            const progress = getProgress();
+            return progress.completed.includes(lessonId);
+        }
+
+        function isLessonLocked(lessonId) {
+            if (lessonId === 1) return false; // First lesson is always unlocked
+            const progress = getProgress();
+            // Check if previous lesson is completed
+            return !progress.completed.includes(lessonId - 1);
+        }
+
+        // Display total stars
+        function updateStarsDisplay() {
+            const progress = getProgress();
+            document.getElementById('totalStars').textContent = progress.totalStars;
+        }
+
+        // Render lessons
+        function renderLessons() {
+            const lessonsGrid = document.getElementById('lessonsGrid');
+            const allLessons = getAllLessons();
+
+            allLessons.forEach(lesson => {
+                const card = document.createElement('div');
+                card.className = 'lesson-card';
+                
+                const completed = isLessonCompleted(lesson.id);
+                const locked = isLessonLocked(lesson.id);
+
+                if (completed) {
+                    card.classList.add('completed');
+                }
+                if (locked) {
+                    card.classList.add('locked');
+                }
+
+                card.innerHTML = `
+                    <div class="lesson-emoji">${lesson.emoji}</div>
+                    <h3>${lesson.title}</h3>
+                    <p>${lesson.description}</p>
+                `;
+
+                if (!locked) {
+                    card.onclick = () => {
+                        window.location.href = `lesson.html?id=${lesson.id}`;
+                    };
+                } else {
+                    card.onclick = () => {
+                        alert('🔒 يجب إكمال الدرس السابق أولاً!');
+                    };
+                }
+
+                lessonsGrid.appendChild(card);
+            });
+        }
+
+        // Initialize page
+        updateStarsDisplay();
+        renderLessons();
+    </script>
+</body>
+</html>
